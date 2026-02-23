@@ -37,6 +37,7 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
+              openssl
               typescript-go
               typescript-language-server
               typescript

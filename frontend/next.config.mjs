@@ -10,6 +10,7 @@ const nextConfig = {
       },
     ],
   },
+  output: "standalone",
   rewrites: async () => {
     return [
       {

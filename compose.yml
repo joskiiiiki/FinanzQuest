@@ -1,176 +1,32 @@
+include:
+  - compose.core.yml
 services:
-  db:
-    container_name: postgres
-    image: timescale/timescaledb:latest-pg17
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      PGDATA: /data/postgres
-      POSTGRES_DB: postgres
-    volumes:
-      - postgres:/data/postgres
-      - ./dbinit/init.sql:/docker-entrypoint-initdb.d/01_init.sql
-      - ./dbinit/functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
-      - ./dbinit/assets.csv:/docker-entrypoint-initdb.d/data/assets.csv
-      - ./dbinit/stocks.sql:/docker-entrypoint-initdb.d/03_stocks.sql
+  frontend:
+    container_name: frontend
+    networks:
+      - postgres
+    restart: unless-stopped
     ports:
-      - 0.0.0.0:5432:5432
-    networks:
-      - postgres
-    restart: unless-stopped
+      - "3000:3000"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-  gotrue:
-    container_name: gotrue_container
-    image: supabase/gotrue:v2.177.0
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      GOTRUE_SITE_URL: ${SITE_URL:-https://localhost:3000}
-      GOTRUE_API_HOST: 0.0.0.0
-      API_EXTERNAL_URL: http://localhost:8081
-      PORT: 9999
-      DB_NAMESPACE: auth
-      # DB_MAX_POOL_SIZE: 1
-      GOTRUE_LOG_LEVEL: debug
-      GOTRUE_DB_DRIVER: postgres
-      DATABASE_URL: postgresql://auth_admin:auth@db:5432/postgres?sslmode=disable # TODO: REMOVE FOR PROD
-      GOTRUE_JWT_SECRET: 37c304f8-51aa-419a-a1af-06154e63707a
-      GOTRUE_JWT_AUD: authenticated
-      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_MAILER_AUTOCONFIRM: true # TODO: SMTP
-      GOTRUE_DISABLE_SIGNUP: false
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: true
-      GOTRUE_EXTERNAL_PHONE_ENABLED: false
-
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:9999/health",
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-    restart: unless-stopped
-    networks:
-      - postgres
-  db_pooler:
-    container_name: db_pooler
-    image: edoburu/pgbouncer:v1.24.1-p1
-    healthcheck:
-      test: ["CMD-SHELL", "pidof pgbouncer || exit 1"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://0.0.0.0:3000/"]
       interval: 10s
       timeout: 5s
       retries: 5
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://authenticator:auth@db:5432/postgres
-      LISTEN_PORT: 6432
-      MAX_CLIENT_CONN: 120
-      POOL_MODE: transaction
-      DEFAULT_POOL_SIZE: 20
-      AUTH_FILE: /etc/pgbouncer/userlist.txt
-    restart: unless-stopped
-    volumes:
-      - ./userlist.txt:/etc/pgbouncer/userlist.txt:ro
-    networks:
-      - postgres
-  rest:
-    container_name: rest
-    image: postgrest/postgrest:v13.0.4
-    depends_on:
-      db_pooler:
-        condition: service_healthy
-      db:
-        condition: service_healthy
-      db-init:
-        condition: service_completed_successfully
-    environment:
-      PGRST_DB_SCHEMAS: "api,depots,users"
-      PGRST_DB_URI: postgres://authenticator:auth@db_pooler:6432/postgres
-      PGRST_OPENAPI_SERVER_PROXY_URI: http://127.0.0.1:3000
-      PGRST_JWT_SECRET: 37c304f8-51aa-419a-a1af-06154e63707a
-      PGRST_SERVER_CORS_ALLOWED_ORIGINS: ""
-    restart: unless-stopped
-    networks:
-      - postgres
-  gateway:
-    container_name: gateway
-    image: nginx:1.29.0-alpine
-    restart: unless-stopped
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - 8080:80
-    depends_on:
-      - gotrue
-      - rest
-    networks:
-      - postgres
-  updater:
-    container_name: updater
+      start_period: 20s
     build:
-      context: ./updater
-      dockerfile: ./dockerfile
-      network: "host"
-
+      context: ./frontend
+      dockerfile: ./Dockerfile
+      target: dev
+      args:
+        - NODE_ENV=production
     depends_on:
       db:
         condition: service_healthy
-
-    environment:
-      DATABASE_URL: postgresql://service_worker:service@db:5432/postgres
-      YF_TIMEOUT: 2
-      UPDATE_IMMEDIATE: true
-    restart: unless-stopped
-    networks:
-      - postgres
-
-  db-init:
-    image: postgres:17-alpine
-    depends_on:
       gotrue:
         condition: service_healthy
-
+      rest:
+        condition: service_started
     environment:
-      PGHOST: postgres # Connect to the 'postgres' service
-      PGPORT: 5432 # Standard PostgreSQL port
-      PGUSER: postgres # Database username
-      PGPASSWORD: postgres # Database password
-      PGDATABASE: postgres # Which database to connect tonetworks:
-
-    volumes:
-      - ./dbinit/permissions.sql:/permissions.sql
-      - ./dbinit/postauth.sql:/postauth.sql
-      - ./dbinit/admin.sql:/admin.sql
-
-    networks:
-      - postgres
-
-    command: >
-      sh -c "
-        echo 'Waiting for GoTrue to be ready...'
-        sleep 10
-        echo 'Running post-GoTrue initialization...'
-        psql -f /permissions.sql
-        psql -f /postauth.sql
-        echo 'Post-GoTrue initialization complete!'
-      "
-
-networks:
-  postgres:
-    driver: bridge
-volumes:
-  postgres:
+      API_URL: http://gateway:80 # 8080 outside, 80 internally
+      JWT_SECRET: $JWT_SECRET

@@ -406,7 +406,7 @@ CREATE TYPE SavingsPeriod AS ENUM (
   'daily' -- WHY NOT LOL
 );
 
-CREATE OR REPLACE FUNCTION depots.sp_to_per_month(period SavingsFrequency) 
+CREATE OR REPLACE FUNCTION depots.sp_to_per_month(period SavingsPeriod) 
 RETURNS NUMERIC AS $$
 BEGIN
   RETURN CASE period

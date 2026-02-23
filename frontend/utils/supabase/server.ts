@@ -7,7 +7,7 @@ import type { Database } from "@/database/types"
 export async function createClient(): Promise<SupabaseClient<Database>> {
 	const cookieStore = await cookies()
 
-	const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+	const url = process.env.NEXT_PUBLIC_SUPABASE_SERVER_URL
 	const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 	if (!url || !key) {
