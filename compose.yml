@@ -28,5 +28,6 @@ services:
       rest:
         condition: service_started
     environment:
-      API_URL: http://gateway:80 # 8080 outside, 80 internally
+      API_URL_SERVER: http://gateway:80 # 8080 outside, 80 internally
+      API_URL_CLIENT: http://localhost:8080 # 8080 outside, 80 internally
       JWT_SECRET: $JWT_SECRET
