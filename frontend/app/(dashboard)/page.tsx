@@ -140,12 +140,8 @@ const dataFetcher = async (depotId: number) => {
 
 	const ownedByUser = response.data?.users.some(id => id === user.id)
 
-	console.log(response.data)
-
 	const { data: depot, error: depotError } = response
 
-	console.log("depots", depot)
-	console.log("depotId", depotId)
 	if (depotError) {
 		return { error: depotError }
 	}

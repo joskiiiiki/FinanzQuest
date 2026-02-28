@@ -125,131 +125,95 @@ CREATE INDEX IF NOT EXISTS idx_transaction_depot ON depots.transactions (depot_i
 CREATE OR REPLACE VIEW depots.aggregated_transactions AS
 WITH daily_totals AS (
   SELECT
-    transactions.depot_id,
-    transactions.asset_id,
-    date(transactions.tstamp) AS tstamp,
-    sum(transactions.amount * transactions.price) AS daily_expenses,
-    sum(transactions.amount) AS daily_amount,
-    sum(transactions.commission) AS daily_commission
-  FROM
-    depots.transactions
-  GROUP BY
-    transactions.depot_id,
-    transactions.asset_id,
-    (date(transactions.tstamp)))
+    depot_id,
+    asset_id,
+    date(tstamp) AS tstamp,
+    SUM(amount * price) AS daily_expenses,
+    SUM(amount) AS daily_amount,
+    SUM(commission) AS daily_commission
+  FROM depots.transactions
+  GROUP BY depot_id, asset_id, date(tstamp)
+)
 SELECT
   depot_id,
   asset_id,
   tstamp,
   daily_amount,
   daily_commission,
-  sum(daily_expenses) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp) AS running_expenses,
-  sum(daily_amount) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp) AS running_amount,
-  sum(daily_commission) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp) AS running_commission
-  FROM
-    daily_totals
-  ORDER BY
-    depot_id,
-    asset_id,
-    tstamp;
+  SUM(daily_expenses) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_expenses,
+  SUM(daily_amount) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_amount,
+  SUM(daily_commission) OVER (PARTITION BY depot_id, asset_id ORDER BY tstamp ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_commission
+FROM daily_totals
+ORDER BY depot_id, asset_id, tstamp;
 
-
+CREATE INDEX IF NOT EXISTS idx_transactions_depot_asset_date 
+  ON depots.transactions (depot_id, asset_id, (tstamp::date));
 
 
 CREATE OR REPLACE VIEW depots.position_values AS
 WITH depot_first_transaction AS (
-  SELECT depot_id, MIN(tstamp) as first_date
-  FROM depots.aggregated_transactions
+  SELECT depot_id, MIN(tstamp::date) as first_date
+  FROM depots.transactions
   GROUP BY depot_id
-),
-date_range AS (
-  SELECT generate_series(
-    (SELECT MIN(first_date) FROM depot_first_transaction),
-    CURRENT_DATE,
-    '1 day'::interval
-  )::date as tstamp
 ),
 depot_assets AS (
   SELECT DISTINCT depot_id, asset_id
-  FROM depots.aggregated_transactions
+  FROM depots.transactions
+),
+date_range AS (
+  SELECT 
+    da.depot_id,
+    da.asset_id,
+    generate_series(dft.first_date, CURRENT_DATE, '1 day'::interval)::date AS tstamp
+  FROM depot_assets da
+  JOIN depot_first_transaction dft ON da.depot_id = dft.depot_id
 )
 SELECT
-  da.depot_id,
-  dates.tstamp,
-  da.asset_id,
+  dr.depot_id,
+  dr.tstamp,
+  dr.asset_id,
   t.running_amount,
   t.running_commission,
   t.running_expenses,
-  ap.close as price,
-  t.running_amount * ap.close as market_value,
-  (t.running_amount * ap.close) - t.running_expenses - t.running_commission as position_profit
-FROM depot_assets da
-INNER JOIN depot_first_transaction dft ON da.depot_id = dft.depot_id
-CROSS JOIN date_range dates
+  ap.close AS price,
+  t.running_amount * ap.close AS market_value,
+  (t.running_amount * ap.close) - t.running_expenses - t.running_commission AS position_profit
+FROM date_range dr
 INNER JOIN LATERAL (
-  SELECT *
+  SELECT running_amount, running_commission, running_expenses
   FROM depots.aggregated_transactions t
-  WHERE t.depot_id = da.depot_id
-    AND t.asset_id = da.asset_id
-    AND t.tstamp <= dates.tstamp
+  WHERE t.depot_id = dr.depot_id
+    AND t.asset_id = dr.asset_id
+    AND t.tstamp <= dr.tstamp
   ORDER BY t.tstamp DESC
   LIMIT 1
 ) t ON TRUE
 LEFT JOIN LATERAL (
   SELECT close
   FROM api.asset_prices
-  WHERE asset_id = da.asset_id
-    AND tstamp <= dates.tstamp
+  WHERE asset_id = dr.asset_id
+    AND tstamp <= dr.tstamp
   ORDER BY tstamp DESC
   LIMIT 1
 ) ap ON TRUE
-WHERE dates.tstamp >= dft.first_date
-AND ap.close IS NOT NULL
-ORDER BY da.depot_id, dates.tstamp, da.asset_id;
+WHERE ap.close IS NOT NULL
+ORDER BY dr.depot_id, dr.tstamp, dr.asset_id;
 
 CREATE OR REPLACE VIEW depots.values AS
-WITH all_depot_dates AS (
-  SELECT DISTINCT depot_id, tstamp
-  FROM depots.position_values
-),
-depot_assets AS (
-  SELECT DISTINCT depot_id, asset_id
-  FROM depots.position_values
-),
--- Get the latest position state for each depot-asset-date combination
-latest_position_state AS (
-  SELECT 
-    da.depot_id,
-    ad.tstamp,
-    da.asset_id,
-    pv.running_commission,
-    pv.running_expenses,
-    pv.market_value,
-    pv.position_profit
-  FROM depot_assets da
-  CROSS JOIN all_depot_dates ad
-  LEFT JOIN LATERAL (
-    SELECT *
-    FROM depots.position_values pv
-    WHERE pv.depot_id = da.depot_id
-      AND pv.asset_id = da.asset_id
-      AND pv.tstamp <= ad.tstamp
-    ORDER BY pv.tstamp DESC
-    LIMIT 1
-  ) pv ON pv.depot_id = da.depot_id AND ad.depot_id = da.depot_id
-)
 SELECT
-  lps.depot_id,
-  lps.tstamp,
-  d.cash_start + SUM(COALESCE(lps.position_profit, 0)) AS value,
-  d.cash_start - SUM(COALESCE(lps.running_commission, 0) + COALESCE(lps.running_expenses, 0)) AS cash,
-  SUM(COALESCE(lps.position_profit, 0)) AS profit_from_start,
-  SUM(COALESCE(lps.market_value, 0)) AS assets
-FROM latest_position_state lps
-JOIN depots.depots d ON lps.depot_id = d.id
-WHERE lps.running_commission IS NOT NULL  -- Only include dates after first transaction
-GROUP BY lps.depot_id, lps.tstamp, d.cash_start
-ORDER BY lps.depot_id, lps.tstamp;
+  pv.depot_id,
+  pv.tstamp,
+  d.cash_start + SUM(pv.position_profit) AS value,
+  d.cash_start - SUM(pv.running_commission + pv.running_expenses) AS cash,
+  SUM(pv.position_profit) AS profit_from_start,
+  SUM(pv.market_value) AS assets
+FROM depots.position_values pv
+JOIN depots.depots d ON pv.depot_id = d.id
+GROUP BY pv.depot_id, pv.tstamp, d.cash_start
+ORDER BY pv.depot_id, pv.tstamp;
+
+CREATE INDEX IF NOT EXISTS idx_asset_prices_asset_tstamp 
+  ON api.asset_prices (asset_id, tstamp DESC);
 
 CREATE OR REPLACE VIEW depots.aggregated_values AS
 WITH latest_per_depot AS (
@@ -419,6 +383,7 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE TABLE IF NOT EXISTS depots.savings_plans (
+  id bigint GENERATED BY DEFAULT AS IDENTITY NOT NULL,
   depot_id bigint NOT NULL,
   asset_id bigint NOT NULL,
   worth real NOT NULL,

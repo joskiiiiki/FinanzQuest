@@ -428,3 +428,72 @@ RETURNS VOID AS $$
 $$ LANGUAGE plpgsql;
 
 GRANT EXECUTE ON FUNCTION depots.grant_reward(bigint, int) TO authenticated;
+
+CREATE OR REPLACE VIEW depots.savings_plans_with_asset AS
+SELECT
+  sp.depot_id,
+  sp.asset_id,
+  sp.worth,
+  sp.period AS frequency,
+  sp.created,
+  sp.last_changed,
+  sp.last_executed,
+  sp.id,
+  a.symbol,
+  a.name,
+  a.description,
+  a.asset_type,
+  a.last_updated
+FROM depots.savings_plans sp
+JOIN api.assets a ON sp.asset_id = a.id;
+
+
+GRANT SELECT ON depots.savings_plans_with_asset TO authenticated;
+GRANT SELECT ON depots.savings_plans TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION depots.update_savings_plan(
+  p_id bigint,
+  p_asset_id bigint,
+  p_worth real,
+  p_frequency savingsperiod
+) RETURNS void AS $$
+BEGIN
+  UPDATE depots.savings_plans SET
+    worth = p_worth,
+    period = p_frequency,
+    last_changed = NOW()
+  WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION depots.update_savings_plan(bigint, bigint, real, savingsperiod) TO authenticated;
+
+CREATE OR REPLACE FUNCTION depots.upsert_savings_plan(
+  p_depot_id bigint,
+  p_asset_id bigint,
+  p_worth real,
+  p_frequency savingsperiod
+) RETURNS void AS $$
+BEGIN
+  INSERT INTO depots.savings_plans (depot_id, asset_id, worth, period, created, last_changed, last_executed, created_by)
+  VALUES (p_depot_id, p_asset_id, p_worth, p_frequency, NOW(), NOW(), CURRENT_DATE, auth.uid())
+  ON CONFLICT (asset_id, depot_id) DO UPDATE SET
+    worth = EXCLUDED.worth,
+    period = EXCLUDED.period,
+    last_changed = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION depots.upsert_savings_plan(bigint, bigint, real, savingsperiod) TO authenticated;
+
+CREATE OR REPLACE FUNCTION depots.delete_savings_plan(
+  p_ids bigint[]
+) RETURNS void AS $$
+BEGIN
+  DELETE FROM depots.savings_plans
+  WHERE id = ANY(p_ids);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION depots.delete_savings_plan(bigint[]) TO authenticated;
