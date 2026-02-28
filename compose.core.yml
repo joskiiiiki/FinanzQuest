@@ -39,7 +39,7 @@ services:
       GOTRUE_LOG_LEVEL: debug
       GOTRUE_DB_DRIVER: postgres
       DATABASE_URL: postgresql://auth_admin:auth@db:5432/postgres?sslmode=disable # TODO: REMOVE FOR PROD
-      GOTRUE_JWT_SECRET: 37c304f8-51aa-419a-a1af-06154e63707a
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_MAILER_AUTOCONFIRM: true # TODO: SMTP
@@ -101,7 +101,7 @@ services:
       PGRST_DB_SCHEMAS: "api,depots,users"
       PGRST_DB_URI: postgres://authenticator:auth@db_pooler:6432/postgres
       PGRST_OPENAPI_SERVER_PROXY_URI: http://127.0.0.1:3000
-      PGRST_JWT_SECRET: 37c304f8-51aa-419a-a1af-06154e63707a
+      PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_SERVER_CORS_ALLOWED_ORIGINS: ""
     restart: unless-stopped
     networks:
@@ -137,7 +137,7 @@ services:
     environment:
       DATABASE_URL: postgresql://service_worker:service@db:5432/postgres
       YF_TIMEOUT: 2
-      UPDATE_IMMEDIATE: true
+      UPDATE_IMMEDIATE: false
     restart: unless-stopped
     networks:
       - postgres
