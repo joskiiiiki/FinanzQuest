@@ -7,6 +7,7 @@ use time::{Date, UtcDateTime};
 use tokio::join;
 
 use crate::yf::PriceFrame;
+mod alpaca;
 mod yf;
 
 const PRICE_MAX: usize = 10_000;
