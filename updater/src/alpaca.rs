@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-mod params {
+pub use params::*;
+
+pub mod params {
     #[derive(strum_macros::Display, strum_macros::EnumString, Copy, Clone, Debug)]
     #[strum(serialize_all = "lowercase")]
     pub enum Feed {
@@ -89,9 +91,8 @@ fn format_date(d: &time::Date) -> Result<String, time::error::Format> {
     d.format(&f)
 }
 
-#[derive(Default)]
 pub struct QueryParams {
-    pub timeframe: Option<params::Timeframe>,
+    pub timeframe: params::Timeframe,
     pub start: Option<params::DateTime>,
     pub end: Option<params::DateTime>,
     pub asof: Option<time::Date>,
@@ -103,6 +104,23 @@ pub struct QueryParams {
     pub sort: Option<params::Sort>,
 }
 
+impl Default for QueryParams {
+    fn default() -> Self {
+        QueryParams {
+            timeframe: Timeframe::Day,
+            start: None,
+            end: None,
+            asof: None,
+            feed: None,
+            currency: None,
+            adjustment: None,
+            limit: None,
+            page_token: None,
+            sort: None,
+        }
+    }
+}
+
 impl QueryParams {
     pub fn to_params_list(&self) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
         macro_rules! param {
@@ -111,11 +129,9 @@ impl QueryParams {
             };
         }
 
-        let mut list: Vec<(String, String)> = Vec::new();
+        let mut list: Vec<(String, String)> =
+            vec![("timeframe".into(), self.timeframe.to_string())];
 
-        if let Some(tf) = &self.timeframe {
-            param!(list, "timeframe", tf)
-        }
         if let Some(start) = &self.start {
             param!(list, "start", start.to_string()?)
         }
@@ -215,6 +231,8 @@ impl AlpacaClient {
             .error_for_status()?
             .json::<BarsResponse>()
             .await?;
+
+        println!("{:#?}", response);
 
         Ok(response)
     }
