@@ -126,7 +126,6 @@ export function AdminUsersTable({ data, className }: AdminUsersTableProps) {
 
 	const handleSave = async (row: Row<UserOverview>) => {
 		// Implement save logic here
-		console.log("Saving user:", row.original.id, editedData)
 		const user_id = row.original.id
 
 		if (user_id) updateUser(user_id, editedData).then(handleError)

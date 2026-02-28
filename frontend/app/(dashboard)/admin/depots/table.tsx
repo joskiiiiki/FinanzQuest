@@ -104,7 +104,6 @@ export function DepotTable({ data, className }: DepotTableProps) {
 	}
 
 	const handleSave = async (row: Row<DepotOverview>) => {
-		console.log("Saving depot:", row.original.id, editedData)
 		const depot_id = row.original.id
 		const monthly_budget = editedData?.monthly_budget
 
