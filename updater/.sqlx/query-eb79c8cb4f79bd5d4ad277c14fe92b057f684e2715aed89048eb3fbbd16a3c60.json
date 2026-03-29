@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, symbol, last_updated FROM api.assets;",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "symbol",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_updated",
+        "type_info": "Date"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "eb79c8cb4f79bd5d4ad277c14fe92b057f684e2715aed89048eb3fbbd16a3c60"
+}

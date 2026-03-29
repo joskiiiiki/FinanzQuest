@@ -17,7 +17,6 @@ pub mod params {
         USD,
         Other(String),
     }
-
     impl std::fmt::Display for Currency {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             match self {
@@ -36,6 +35,13 @@ pub mod params {
         Dividend,
         SpinOff,
         All,
+    }
+
+    impl Default for Adjustment {
+        #[inline]
+        fn default() -> Self {
+            Self::Raw
+        }
     }
 
     #[derive(strum_macros::Display, strum_macros::EnumString, Copy, Clone, Debug)]
@@ -91,6 +97,7 @@ fn format_date(d: &time::Date) -> Result<String, time::error::Format> {
     d.format(&f)
 }
 
+#[derive(Debug)]
 pub struct QueryParams {
     pub timeframe: params::Timeframe,
     pub start: Option<params::DateTime>,
@@ -164,6 +171,7 @@ impl QueryParams {
     }
 }
 
+#[derive(Debug)]
 pub struct AlpacaRequest {
     pub symbols: Vec<String>,
     pub query: QueryParams,
@@ -185,9 +193,8 @@ pub struct Bar {
     pub h: f64,    // high
     pub l: f64,    // low
     pub c: f64,    // close
-    pub v: f64,    // volume
+    pub v: i64,    // volume
     pub vw: f64,   // vwap
-    pub n: u64,    // trade count
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -232,8 +239,6 @@ impl AlpacaClient {
             .json::<BarsResponse>()
             .await?;
 
-        println!("{:#?}", response);
-
         Ok(response)
     }
 
@@ -241,9 +246,10 @@ impl AlpacaClient {
     pub async fn fetch_all_bars(
         &self,
         symbols: Vec<String>,
-        mut query: QueryParams,
+        query: QueryParams,
     ) -> Result<HashMap<String, Vec<Bar>>, Box<dyn std::error::Error>> {
         let mut all_bars: HashMap<String, Vec<Bar>> = HashMap::new();
+        let mut page_token = query.page_token;
 
         loop {
             let request = AlpacaRequest {
@@ -257,7 +263,7 @@ impl AlpacaClient {
                     currency: query.currency.clone(),
                     adjustment: query.adjustment,
                     limit: query.limit.or(Some(10000)),
-                    page_token: query.page_token.clone(),
+                    page_token: page_token,
                     sort: query.sort,
                 },
             };
@@ -269,8 +275,10 @@ impl AlpacaClient {
             }
 
             match response.next_page_token {
-                Some(token) => query.page_token = Some(token),
-                None => break,
+                Some(token) => page_token = Some(token),
+                None => {
+                    break;
+                }
             }
         }
 
@@ -280,17 +288,19 @@ impl AlpacaClient {
     pub fn stream_bars(
         &self,
         symbols: Vec<String>,
-        mut query: QueryParams,
+        query: QueryParams,
     ) -> impl tokio_stream::Stream<
         Item = Result<HashMap<String, Vec<Bar>>, Box<dyn std::error::Error>>,
     > + '_ {
         async_stream::stream! {
+
+            let mut page_token = query.page_token;
             loop {
                 let request = AlpacaRequest {
                     symbols: symbols.clone(),
                     query: QueryParams {
                         limit: query.limit.or(Some(10000)),
-                        page_token: query.page_token.clone(),
+                        page_token: page_token.clone(),
                         timeframe:  query.timeframe,
                         start:      query.start.clone(),
                         end:        query.end.clone(),
@@ -309,8 +319,54 @@ impl AlpacaClient {
                         yield Ok(response.bars);
 
                         match next {
-                            Some(token) => query.page_token = Some(token),
+                            Some(token) => page_token = Some(token),
                             None => break,
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn stream_bars_chunked(
+        &self,
+        symbols: Vec<String>,
+        query: QueryParams,
+        chunk_size: usize,
+    ) -> impl tokio_stream::Stream<
+        Item = Result<HashMap<String, Vec<Bar>>, Box<dyn std::error::Error>>,
+    > + '_ {
+        async_stream::stream! {
+
+            let mut page_token = query.page_token;
+            for chunk in symbols.chunks(chunk_size) {
+                loop {
+                    let request = AlpacaRequest {
+                        symbols: chunk.to_vec(),
+                        query: QueryParams {
+                            limit: query.limit.or(Some(10000)),
+                            page_token: page_token.clone(),
+                            timeframe:  query.timeframe,
+                            start:      query.start.clone(),
+                            end:        query.end.clone(),
+                            asof:       query.asof,
+                            feed:       query.feed,
+                            currency:   query.currency.clone(),
+                            adjustment: query.adjustment,
+                            sort:       query.sort,
+                        },
+                    };
+
+
+                    match self.fetch_bars(request).await {
+                        Err(e) => { yield Err(e); break; }
+                        Ok(response) => {
+                            page_token = response.next_page_token.clone();
+                            yield Ok(response.bars);
+
+                            if page_token.is_none() {
+                                break
+                            }
                         }
                     }
                 }
