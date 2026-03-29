@@ -12,10 +12,10 @@ services:
       SERVICE_WORKER_PASSWORD: ${SERVICE_WORKER_PASSWORD}
     volumes:
       - postgres:/data/postgres
-      - ./dbinit/00_init.sh:/docker-entrypoint-initdb.d/00_init.sh
-      - ./dbinit/01_init.sql:/init/01_init.sql
-      - ./dbinit/02_functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
-      - ./dbinit/03_stocks.sql:/docker-entrypoint-initdb.d/03_stocks.sql
+      - ./dbinit/init.sh:/docker-entrypoint-initdb.d/00_init.sh
+      - ./dbinit/init.sql:/init/01_init.sql
+      - ./dbinit/functions.sql:/docker-entrypoint-initdb.d/02_functions.sql
+      - ./dbinit/stocks.sql:/docker-entrypoint-initdb.d/03_stocks.sql
       - ./dbinit/assets.csv:/docker-entrypoint-initdb.d/data/assets.csv
     ports:
       - 0.0.0.0:5432:5432
