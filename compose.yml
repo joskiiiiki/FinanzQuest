@@ -1,5 +1,7 @@
 include:
   - compose.core.yml
+name: FinanzQuest
+
 services:
   frontend:
     container_name: frontend
