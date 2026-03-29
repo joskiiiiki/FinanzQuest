@@ -2,4 +2,4 @@
 *.env
 .pgpass
 /secrets
-run.sh
+.env

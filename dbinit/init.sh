@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+psql -v AUTH_ADMIN_PASSWORD="$AUTH_ADMIN_PASSWORD" \
+     -v AUTHENTICATOR_PASSWORD="$AUTHENTICATOR_PASSWORD" \
+     -v SERVICE_WORKER_PASSWORD="$SERVICE_WORKER_PASSWORD" \
+     -U "$POSTGRES_USER" \
+     -d "$POSTGRES_DB" \
+     -f /init/01_init.sql

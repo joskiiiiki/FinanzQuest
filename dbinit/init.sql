@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 -- Auth
-CREATE ROLE auth_admin NOINHERIT LOGIN PASSWORD 'auth';
+CREATE ROLE auth_admin NOINHERIT LOGIN PASSWORD :'AUTH_ADMIN_PASSWORD';
 CREATE SCHEMA IF NOT EXISTS auth AUTHORIZATION auth_admin;
 
 GRANT CREATE ON DATABASE postgres TO auth_admin;
@@ -404,7 +404,7 @@ CREATE INDEX IF NOT EXISTS idx_savings_depot ON depots.transactions (depot_id);
 
 
 -- Pooler
-CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'auth';
+CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD :'AUTHENTICATOR_PASSWORD';
 
 GRANT CONNECT ON DATABASE postgres TO authenticator;
 
@@ -414,7 +414,7 @@ GRANT anon TO authenticator;
 GRANT USAGE ON SCHEMA depots TO authenticator;
 GRANT SELECT ON depots.depots TO authenticator;
 -- Service Rest
-CREATE ROLE service_worker NOINHERIT BYPASSRLS LOGIN PASSWORD 'service';
+CREATE ROLE service_worker NOINHERIT BYPASSRLS LOGIN PASSWORD :'SERVICE_WORKER_PASSWORD';
 
 GRANT CONNECT ON DATABASE postgres TO service_worker;
 
