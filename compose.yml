@@ -4,10 +4,19 @@ name: FinanzQuest
 
 services:
   gateway:
+    networks:
+      - postgres
     ports:
       - 80:80
     volumes:
-      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro    
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      frontend:
+        condition: service_healthy  # you have a healthcheck defined so use it
   frontend:
     container_name: frontend
     networks:
