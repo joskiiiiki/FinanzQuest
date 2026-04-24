@@ -16,7 +16,6 @@
       git
       curl
       vim
-      gh
     ];
     # Don't touch this
     stateVersion = "25.05";

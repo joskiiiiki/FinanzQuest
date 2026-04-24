@@ -2,8 +2,8 @@
   imports = [ ./nixos/variables-config.nix ];
 
   config.var = {
-    hostname = "planserver";
-    username = "planuser";
+    hostname = "nixos";
+    username = "admin";
     configDirectory = "/home/" + config.var.username
       + "/planbackend/nixos"; # The path of the nixos configuration directory
 
