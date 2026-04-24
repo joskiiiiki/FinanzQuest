@@ -21,6 +21,9 @@ export default function PriceCell({
 	options,
 }: PriceCellProps) {
 	const isNumber = options.type === "int" || options.type === "float"
+	if (!value) {
+		return <TableCell />
+	}
 	if (options.indicator && isNumber) {
 		return (
 			<TableCell

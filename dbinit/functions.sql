@@ -6,14 +6,15 @@ BEGIN
         SELECT DISTINCT ON (asset_id)
             asset_id,
             tstamp,
-            close
+            close,
+            open
         FROM api.asset_prices
         ORDER BY asset_id, tstamp DESC
     )
     UPDATE depots.positions as dp
     SET
-        price = latest_prices.close,
-        worth = latest_prices.close * amount,
+        price = COALESCE(latest_prices.close, latest_prices.open),
+        worth = COALESCE(latest_prices.close, latest_prices.open) * amount,
         last = latest_prices.tstamp
     FROM latest_prices
     WHERE
@@ -54,7 +55,7 @@ BEGIN
 
 
     -- Find the asset's current price
-    SELECT prices.close, prices.tstamp
+    SELECT COALESCE(prices.close, prices.open), prices.tstamp
     FROM api.asset_prices AS prices
     WHERE prices.asset_id = p_asset_id
     ORDER BY prices.tstamp DESC
@@ -126,7 +127,7 @@ BEGIN
     commission := current_setting('config.commission')::REAL;
 
     -- Find the asset's current price
-    SELECT prices.close, prices.tstamp
+    SELECT COALESCE(prices.close, prices.open), prices.tstamp
     FROM api.asset_prices AS prices
     WHERE prices.asset_id = p_asset_id
     ORDER BY prices.tstamp DESC
