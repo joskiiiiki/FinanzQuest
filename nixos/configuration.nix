@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+{
   imports = [
     ./nixos/auto-upgrade.nix
     ./nixos/home-manager.nix
@@ -24,7 +25,7 @@
   #   description = "Planbackend";
   #   after = [ "docker.service" ];
   #   wantedBy = [ "multi-user.target" ];
-  
+
   #   serviceConfig = {
   #     Type = "oneshot";
   #     RemainAfterExit = true;
@@ -32,9 +33,17 @@
   #     ExecStart = "${pkgs.docker-compose}/bin/docker-compose up -d";
   #     ExecStop = "${pkgs.docker-compose}/bin/docker-compose down";
   #   };
-  
+
   #   path = [ pkgs.docker-compose ];
   # };
+
+  # configuration.nix
+  boot.kernel.sysctl."net.ipv4.ip_unprivileged_port_start" = 80; # allow docker to use 80
+
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
   home-manager.users."${config.var.username}" = import ./home.nix;
   home-manager.backupFileExtension = "backup";
   # Don't touch this

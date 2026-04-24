@@ -3,6 +3,11 @@ include:
 name: FinanzQuest
 
 services:
+  gateway:
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro    
   frontend:
     container_name: frontend
     networks:
