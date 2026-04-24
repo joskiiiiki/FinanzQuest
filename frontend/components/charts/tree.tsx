@@ -33,7 +33,7 @@ function CustomContent(props: ContentProps) {
 
 	if (position !== undefined && position !== null) {
 		prof = (position.total_profit as number) / (position.market_value as number)
-		color = prof > 0 ? "hsl(var(--win))" : "hsl(var(--loss))"
+		color = prof > 0 ? "oklch(var(--win))" : "oklch(var(--loss))"
 	}
 
 	const opacity = depth > 0 ? calculateOpacity(prof) : 0

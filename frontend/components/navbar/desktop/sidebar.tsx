@@ -7,6 +7,7 @@ import {
 	type LucideIcon,
 	PiggyBank,
 	SearchIcon,
+	Trophy,
 } from "lucide-react"
 import { Suspense, useEffect, useState } from "react"
 import DepotPicker from "@/components/navbar/desktop/depot_picker"
@@ -49,7 +50,7 @@ export function AppSidebar() {
 			{ title: "Sparplan", url: "/savings_plan", icon: PiggyBank },
 		],
 		// Aktien: [{ title: "Suche", url: "/search", icon: SearchIcon }],
-		// Wettbewerb: [{ title: "Leaderboard", url: "/leaderboard", icon: Trophy }],
+		Wettbewerb: [{ title: "Leaderboard", url: "/leaderboard", icon: Trophy }],
 	}
 
 	if (isTeacher) {

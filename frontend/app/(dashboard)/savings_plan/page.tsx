@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/server"
 import NewEntryDialog from "./new_dialog"
 import { SavingsPlanTable } from "./table"
+import { Separator } from "@/components/ui/separator"
 export default async function Page(props: {
 	searchParams: Promise<SearchParams>
 }) {

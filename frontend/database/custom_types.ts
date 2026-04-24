@@ -73,3 +73,5 @@ export const frequenciesDisplay = {
 	monthly: "Monatlich",
 	annually: "Jährlich",
 }
+
+export type LeaderboardRow = Database["depots"]["Views"]["leaderboard"]["Row"]

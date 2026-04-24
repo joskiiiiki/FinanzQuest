@@ -21,6 +21,15 @@ type StockPickerProps = {
 	onSearchChange: (query: string) => void
 }
 
+const assetTypeStyles = {
+	stock: "bg-stock/30 border-stock/60 text-stock",
+	crypto: "bg-crypto/30 border-crypto/60 text-crypto",
+	fund: "bg-fund/30 border-fund/60 text-fund",
+	commodity: "bg-commodity/30 border-commodity/60 text-commodity",
+}
+
+// then in JSX:
+
 export default function StockPicker({
 	value,
 	onSelect,
@@ -86,10 +95,10 @@ export default function StockPicker({
 								) : (
 									<div className="size-[1.6lh] bg-primary/50 rounded"></div>
 								)}
-								<div className="flex flex-col">
-									<span className="font-medium">{stock.symbol}</span>
+								<div className="flex flex-col w-full">
+									<span className="font-medium">{stock.name}</span>
 									<span className="text-sm text-muted-foreground">
-										{stock.name}
+										{stock.symbol}
 									</span>
 								</div>
 								<div className="flex-grow flex-shrink" />
@@ -99,6 +108,14 @@ export default function StockPicker({
 										value === stock.id ? "opacity-100" : "opacity-0"
 									)}
 								/>
+								<div
+									className={cn(
+										"text-sm py-1 px-2 rounded-full border",
+										assetTypeStyles[stock.asset_type]
+									)}
+								>
+									{stock.asset_type}
+								</div>
 							</CommandItem>
 						)
 					})}

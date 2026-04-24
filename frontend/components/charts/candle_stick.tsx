@@ -72,7 +72,7 @@ export default function CandleStickChart<T extends BarDataT>({
 					interval={tickInterval || "preserveEnd"}
 				/>
 				<YAxis hide domain={["min", "max"]} />
-				<Bar maxBarSize={20} dataKey={barKey} fill="hsl(var(--win))">
+				<Bar maxBarSize={20} dataKey={barKey} fill="oklch(var(--win))">
 					{chartData.map(entry => {
 						const win = entry[winKey]
 						return (
@@ -81,8 +81,8 @@ export default function CandleStickChart<T extends BarDataT>({
 								key={entry[xKey] as string}
 								radius={4}
 								fillOpacity={0.6}
-								stroke={win ? "hsl(var(--win))" : "hsl(var(--loss))"}
-								fill={win ? "hsl(var(--win))" : "hsl(var(--loss))"}
+								stroke={win ? "oklch(var(--win))" : "oklch(var(--loss))"}
+								fill={win ? "oklch(var(--win))" : "oklch(var(--loss))"}
 							/>
 						)
 					})}

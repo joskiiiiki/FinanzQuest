@@ -34,6 +34,8 @@ export default async function Page({
 
 	if (noDepot) {
 		redirect("/new_depot")
+	} else {
+		console.log(depotId)
 	}
 
 	if (depotIdError || !depotId) {
@@ -43,6 +45,10 @@ export default async function Page({
 	const fres = await dataFetcher(depotId)
 	if (fres.error) {
 		return <ErrorCard error={fres.error} />
+	}
+
+	if (fres.noDepot) {
+		redirect("/new_depot")
 	}
 
 	if (fres.depot === null) {
@@ -146,7 +152,7 @@ const dataFetcher = async (depotId: number) => {
 		return { error: depotError }
 	}
 	if (!depot) {
-		return { depot: null }
+		return { depot: null, noDepot: true }
 	}
 
 	const tstamp = toISODateOnly(getDateCertainDaysAgo(30))
@@ -176,5 +182,6 @@ const dataFetcher = async (depotId: number) => {
 		depotValues: valueResponse.data,
 		depotAggValues: valueAggResponse.data,
 		ownedByUser,
+		noDepot: false,
 	}
 }

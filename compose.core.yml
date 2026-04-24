@@ -112,9 +112,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://service_worker:${SERVICE_WORKER_PASSWORD}@db:5432/postgres
+      DB_URL: postgresql://service_worker:${SERVICE_WORKER_PASSWORD}@db:5432/postgres
+      ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
+      ALPACA_KEY_ID: ${ALPACA_KEY_ID}
       YF_TIMEOUT: 2
-      UPDATE_IMMEDIATE: false
+      ALPACA_TIMEOUT: 1000
+      BATCH_SIZE: 10000
+      FETCH_CHUNK_SIZE: 10
     restart: unless-stopped
     networks:
       - postgres

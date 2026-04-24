@@ -23,11 +23,11 @@ struct Args {
     #[arg(short, long, default_value_t = 1_000)]
     yf_timeout: usize,
     #[arg(short, long, default_value_t = 1_000)]
-    al_timeout: usize,
+    alpaca_timeout: usize,
     #[arg(short, long)]
-    secret_key: String,
+    alpaca_secret_key: String,
     #[arg(short, long)]
-    key_id: String,
+    alpaca_key_id: String,
     #[arg(long, default_value_t = 10_000)]
     batch_size: usize,
     #[arg(long, default_value_t = 10)]
@@ -38,18 +38,18 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Args {
         db_url,
-        secret_key,
-        key_id,
+        alpaca_secret_key,
+        alpaca_key_id,
         yf_timeout,
-        al_timeout,
+        alpaca_timeout,
         batch_size,
         fetch_chunk_size,
     } = Args::parse();
 
     let yf_timeout = Duration::from_millis(yf_timeout as u64);
-    let al_timeout = Duration::from_millis(al_timeout as u64);
+    let al_timeout = Duration::from_millis(alpaca_timeout as u64);
 
-    let client = AlpacaClient::new(key_id, secret_key);
+    let client = AlpacaClient::new(alpaca_key_id, alpaca_secret_key);
 
     print!("Establishing database connection: ");
 

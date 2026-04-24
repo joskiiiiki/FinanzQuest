@@ -33,6 +33,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "app/(auth)/signout"
-  ],
+  , "app/(dashboard)/leaderboard"  ],
   "exclude": ["node_modules", ".direnv"]
 }

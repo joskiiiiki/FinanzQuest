@@ -42,12 +42,10 @@
               typescript-language-server
               typescript
               tailwindcss-language-server
-              node2nix
               nodejs
-              nodePackages.pnpm
+              pnpm
               yarn
               supabase-cli
-              nodePackages.vercel
               biome
               postgresql
             ];

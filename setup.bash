@@ -25,8 +25,10 @@ AUTH_ADMIN_PASSWORD=$(openssl rand -hex 32)
 AUTHENTICATOR_PASSWORD=$(openssl rand -hex 32)
 SERVICE_WORKER_PASSWORD=$(openssl rand -hex 32)
 SITE_URL=http://localhost:8080
+ALPACA_KEY_ID=XXXXXXXXXXXXXXXXXXXXXXXXXX
+ALPACA_SECRET_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 EOF
 
 info "Done!"
-warn "Edit SITE_URL in .env before deploying to production."
+warn "Edit SITE_URL and Alpaca Secrets in .env before deploying to production."
 warn "Run 'docker compose up -d' to start."

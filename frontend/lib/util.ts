@@ -115,3 +115,29 @@ export function relativeDateStringCompact(
 
 	return `${diff}d`
 }
+
+const asset_type_displays = new Map(
+	Object.entries({
+		commodity: "Ware",
+		crypto: "Krypto",
+		fund: "ETF",
+		stock: "Aktie",
+	})
+)
+
+export function asset_type_display(asset_type: string): string | null {
+	return asset_type_displays.get(asset_type) ?? null
+}
+
+const asset_type_colors = new Map(
+	Object.entries({
+		commodity: "hsl(var(--color-commodity))",
+		crypto: "hsl(var(--color-crypto))",
+		fund: "hsl(var(--color-fund))",
+		stock: "hsl(var(--color-stock))",
+	})
+)
+
+export function asset_type_color(asset_type: string): string | null {
+	return asset_type_colors.get(asset_type) ?? null
+}

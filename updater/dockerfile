@@ -1,9 +1,7 @@
 FROM rust:alpine
-
 WORKDIR /usr/workdir/src/updater
 COPY . .
 
-# Install dependencies including dcron
 RUN apk update && apk add --no-cache --purge \
     openssl-dev \
     openssl-libs-static \
@@ -11,25 +9,15 @@ RUN apk update && apk add --no-cache --purge \
     libc-dev \
     dcron
 
-# Build the application
 RUN cargo install --profile release --target x86_64-unknown-linux-musl --path .
 
-# Verify the binary location and create symlink if needed
 RUN which updater || echo "Binary not in PATH!"
 
-# Create cron job that runs at 1 AM every night
-RUN echo "0 1 * * * $(which updater)" > /etc/crontabs/root
+COPY run_updater.sh /usr/local/bin/run_updater.sh
+COPY startup.sh /usr/local/bin/startup.sh
+RUN chmod +x /usr/local/bin/run_updater.sh /usr/local/bin/startup.sh
 
-# Ensure cron has proper permissions
-RUN chmod 0644 /etc/crontabs/root
+RUN echo '0 1 * * * root /usr/local/bin/run_updater.sh' > /etc/crontabs/root && \
+    chmod 0644 /etc/crontabs/root
 
-# Create startup script
-RUN echo '#!/bin/sh' > /usr/local/bin/startup.sh && \
-    echo 'echo "Running updater at startup..."' >> /usr/local/bin/startup.sh && \
-    echo 'updater' >> /usr/local/bin/startup.sh && \
-    echo 'echo "Starting cron daemon..."' >> /usr/local/bin/startup.sh && \
-    echo 'crond -f -l 2' >> /usr/local/bin/startup.sh && \
-    chmod +x /usr/local/bin/startup.sh
-
-# Run startup script
 CMD ["/usr/local/bin/startup.sh"]

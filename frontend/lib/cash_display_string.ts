@@ -4,6 +4,13 @@ export const currencyFormat = Intl.NumberFormat("de-DE", {
 	currency: "EUR",
 	currencyDisplay: "symbol",
 })
+export const currencyFormatFixedLength = Intl.NumberFormat("de-DE", {
+	style: "currency",
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2,
+	currency: "EUR",
+	currencyDisplay: "symbol",
+})
 
 export function to_display_string(
 	amount: number | null,
