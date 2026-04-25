@@ -1,0 +1,42 @@
+finanzquest.app {
+    # 10MB upload limit
+    request_body {
+        max_size 10MB
+    }
+
+    # Auth - with CORS handling
+    handle /auth/v1/* {
+        uri strip_prefix /auth/v1
+
+        # Handle OPTIONS preflight
+        @options method OPTIONS
+        handle @options {
+            header Access-Control-Allow-Origin *
+            header Access-Control-Allow-Methods "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS,TRACE,CONNECT"
+            header Access-Control-Allow-Headers "Authorization,apikey,Content-Type,X-Client-Info,x-supabase-api-version"
+            header Access-Control-Max-Age 3600
+            respond "" 204
+        }
+
+        # Strip upstream CORS headers and add our own
+        header -Access-Control-Allow-Origin
+        header -Access-Control-Allow-Methods
+        header -Access-Control-Allow-Headers
+        header Access-Control-Allow-Origin *
+        header Access-Control-Allow-Methods "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS,TRACE,CONNECT"
+        header Access-Control-Allow-Headers "Authorization,apikey,Content-Type,X-Client-Info,x-supabase-api-version"
+
+        reverse_proxy auth:9999
+    }
+
+    # REST
+    handle /rest/v1/* {
+        uri strip_prefix /rest/v1
+        reverse_proxy rest:3000
+    }
+
+    # Frontend (catch-all)
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

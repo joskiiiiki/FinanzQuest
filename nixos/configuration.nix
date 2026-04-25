@@ -13,7 +13,6 @@
     ./nixos/variables-config.nix
     ./hardware-configuration.nix
     ./nixos/docker.nix
-    ./nixos/https.nix
     ./variables.nix
   ];
 
