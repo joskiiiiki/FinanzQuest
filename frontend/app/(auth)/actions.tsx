@@ -94,7 +94,9 @@ export async function signUpRedirect(
 	password: string,
 	client?: SupabaseClient<Database>
 ) {
+	console.log("signing up")
 	const { error } = await signup(fullName, email, password, client)
+	console.log("signed up")
 
 	if (error) return error
 

@@ -8,8 +8,7 @@ services:
       - postgres
     ports:
       - 80:80
-    volumes:
-      - ./nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - 443:443
     depends_on:
       auth:
         condition: service_healthy
@@ -33,7 +32,7 @@ services:
     build:
       context: ./frontend
       dockerfile: ./Dockerfile
-      target: dev
+      # target: dev
       args:
         - NODE_ENV=production
     depends_on:
@@ -44,6 +43,6 @@ services:
       rest:
         condition: service_started
     environment:
-      API_URL_SERVER: http://gateway:80 # 8080 outside, 80 internally
-      API_URL_CLIENT: http://162.55.52.117 # 8080 outside, 80 internally
+      API_URL_SERVER: https://finanzquest.app # 8080 outside, 80 internally
+      API_URL_CLIENT: https://finanzquest.app # 8080 outside, 80 internally
       JWT_SECRET: $JWT_SECRET
