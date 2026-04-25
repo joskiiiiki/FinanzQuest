@@ -58,7 +58,7 @@ export type SavingsPlan = Database["depots"]["Tables"]["savings_plans"]["Row"]
 export type SavingsPlanWithAsset =
 	Database["depots"]["Views"]["savings_plans_with_asset"]["Row"]
 
-export type Frequency = Database["public"]["Enums"]["savingsfrequency"]
+export type Frequency = Database["public"]["Enums"]["savingsperiod"]
 
 export const frequencies: Frequency[] = [
 	"daily",

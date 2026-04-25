@@ -152,7 +152,6 @@ export function SavingsPlanTable({
 	const handleDelete = async (row: Row<SavingsPlanWithAsset>) => {
 		const id = row.getValue("id") as number | null | undefined
 
-
 		if (!id) {
 			return new Error("No ID provided")
 		}
@@ -471,7 +470,7 @@ export function SavingsPlanTable({
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
-		onColumnVisibilityChange: () => { },
+		onColumnVisibilityChange: () => {},
 		onRowSelectionChange: setRowSelection,
 		state: {
 			sorting,
@@ -494,9 +493,9 @@ export function SavingsPlanTable({
 											{header.isPlaceholder
 												? null
 												: flexRender(
-													header.column.columnDef.header,
-													header.getContext()
-												)}
+														header.column.columnDef.header,
+														header.getContext()
+													)}
 										</TableHead>
 									)
 								})}
