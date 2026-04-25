@@ -13,13 +13,10 @@
     ./nixos/variables-config.nix
     ./hardware-configuration.nix
     ./nixos/docker.nix
+    ./nixos/https.nix
     ./variables.nix
   ];
 
-  # networking.firewall = {
-  #   enable = true;
-  #   allowedTCPPorts = [ 5432 8080 ];
-  # };
 
   # systemd.services."docker-compose-myapp" = {
   #   description = "Planbackend";
@@ -38,12 +35,10 @@
   # };
 
   # configuration.nix
-  boot.kernel.sysctl."net.ipv4.ip_unprivileged_port_start" = 80; # allow docker to use 80
-
-  networking.firewall.allowedTCPPorts = [
-    80
-    443
+  environment.systemPackages = with pkgs; [
+    openssl
   ];
+
   home-manager.users."${config.var.username}" = import ./home.nix;
   home-manager.backupFileExtension = "backup";
   # Don't touch this

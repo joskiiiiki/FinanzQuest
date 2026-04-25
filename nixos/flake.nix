@@ -17,7 +17,7 @@
     in
     {
       nixosConfigurations = {
-        planserver = nixpkgs.lib.nixosSystem {
+        nixos = nixpkgs.lib.nixosSystem {
           inherit system;
           modules = [
             { _module.args = { inherit inputs; }; }

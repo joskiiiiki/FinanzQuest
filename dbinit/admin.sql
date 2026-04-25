@@ -75,7 +75,7 @@ BEGIN
     IF auth.uid() IS NULL THEN
         RETURN FALSE;
     END IF;
-    
+
     RETURN EXISTS (
         SELECT 1 FROM users.special_roles
         WHERE user_id = auth.uid() AND user_role = required_role
@@ -94,7 +94,7 @@ BEGIN
 
     RETURN EXISTS (
         SELECT 1 FROM users.special_roles
-        WHERE user_id = auth.uid() 
+        WHERE user_id = auth.uid()
         AND user_role = ANY(required_roles)
     );
 END;
@@ -134,7 +134,7 @@ ON users.special_roles FOR DELETE
 TO authenticated
 USING (users.has_role('admin'));
 
--- Teachers - Depots 
+-- Teachers - Depots
 CREATE POLICY "Teachers can view all Depots"
 ON depots.depots FOR SELECT TO authenticated
 USING (users.has_role('teacher'));
@@ -175,7 +175,7 @@ CREATE OR REPLACE FUNCTION users.get_all_profiles()
 RETURNS TABLE(user_id uuid, name text, created_at timestamptz) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         au.id AS user_id,
         au.raw_user_meta_data->>'name' AS name,
         au."created_at"
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS depots.savings_plans_budget(
     depot_id BIGINT NOT NULL REFERENCES depots.depots(id) ON DELETE CASCADE,
     budget INT NOT NULL,
     last_changed TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (depot_id) 
+    PRIMARY KEY (depot_id)
 );
 
 -- Enable RLS
@@ -222,11 +222,11 @@ FOR UPDATE TO authenticated
 USING (users.has_role('teacher'));
 
 -- Create function
-CREATE OR REPLACE FUNCTION depots.change_budget(p_depot_id BIGINT, p_budget INT) 
-RETURNS VOID 
+CREATE OR REPLACE FUNCTION depots.change_budget(p_depot_id BIGINT, p_budget INT)
+RETURNS VOID
 LANGUAGE plpgsql AS $$
 BEGIN
-    INSERT INTO depots.savings_plans_budget (depot_id, budget, last_changed) 
+    INSERT INTO depots.savings_plans_budget (depot_id, budget, last_changed)
     VALUES (p_depot_id, p_budget, NOW())
     ON CONFLICT (depot_id) DO UPDATE
     SET
@@ -248,14 +248,14 @@ BEGIN
 END;
 $$ SECURITY DEFINER;
 
-CREATE TRIGGER grant_default_budget 
+CREATE TRIGGER grant_default_budget
 AFTER INSERT ON depots.depots
 FOR EACH ROW
 EXECUTE FUNCTION depots.grant_default_budget_trigger();
 
 
 -- Overview with counts
-CREATE OR REPLACE FUNCTION users.get_admin_overview() 
+CREATE OR REPLACE FUNCTION users.get_admin_overview()
 RETURNS TABLE(
     id uuid,
     email text,
@@ -274,7 +274,7 @@ BEGIN
         RAISE EXCEPTION 'Unauthorized: Admin or Teacher role required'
             USING ERRCODE = '42501';
     END IF;
-    
+
     RETURN QUERY
     SELECT
         au.id as user_id,
@@ -290,7 +290,7 @@ BEGIN
         COUNT(DISTINCT t.id) AS transaction_count
     FROM auth.users AS au
     LEFT JOIN LATERAL (
-        SELECT 
+        SELECT
             array_agg(us.user_role ORDER BY us.granted_at) AS user_roles,
             array_agg(us.granted_at ORDER BY us.granted_at) AS role_granted_at
         FROM users.special_roles AS us
@@ -300,7 +300,7 @@ BEGIN
     LEFT JOIN depots.positions AS p ON d.id = p.depot_id
     LEFT JOIN depots.transactions AS t ON d.id = t.depot_id
     GROUP BY au.id, au.email, au.created_at, au.raw_user_meta_data, roles.user_roles, roles.role_granted_at;
-END; 
+END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 CREATE OR REPLACE VIEW users.admin_overview AS SELECT * FROM users.get_admin_overview();
@@ -329,7 +329,7 @@ CREATE OR REPLACE FUNCTION depots.get_depot_overview() RETURNS TABLE(
             d.id,
             d.cash,
             d.cash_start,
-            COUNT(DISTINCT dt.id) as transaction_count, 
+            COUNT(DISTINCT dt.id) as transaction_count,
             COUNT(DISTINCT dp.id) as position_count,
             u.user_names,
             u.user_ids,
@@ -414,7 +414,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
 GRANT EXECUTE ON FUNCTION users."stats"() TO authenticated;
 
-CREATE OR REPLACE FUNCTION depots.grant_reward(p_depot_id BIGINT, p_amount INT) 
+CREATE OR REPLACE FUNCTION depots.grant_reward(p_depot_id BIGINT, p_amount INT)
 RETURNS VOID AS $$
     BEGIN
         IF NOT (users.has_any_role('teacher') OR current_user = 'postgres') THEN
@@ -497,3 +497,70 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION depots.delete_savings_plan(bigint[]) TO authenticated;
+
+CREATE TYPE users.profile_ref AS (
+    user_id uuid,
+    name text
+);
+CREATE OR REPLACE VIEW depots.leaderboard AS
+  WITH ranked AS (
+      SELECT
+          dv.depot_id,
+          dv.tstamp,
+          dv.value,
+          dv.cash,
+          dv.profit_from_start,
+          dv.assets,
+          ROW_NUMBER() OVER (PARTITION BY dv.depot_id ORDER BY dv.tstamp DESC) AS rn
+      FROM depots.values AS dv
+  ),
+  latest AS (
+      SELECT * FROM ranked WHERE rn = 1
+  ),
+  previous AS (
+      SELECT * FROM ranked WHERE rn = 2
+  ),
+  current_ranks AS (
+      SELECT
+          l.depot_id,
+          DENSE_RANK() OVER (ORDER BY l.value DESC) AS rank
+      FROM latest l
+  ),
+  previous_ranks AS (
+      SELECT
+          p.depot_id,
+          DENSE_RANK() OVER (ORDER BY p.value DESC) AS prev_rank
+      FROM previous p
+  ),
+  last7 AS (
+      SELECT
+          depot_id,
+          ARRAY_AGG(value ORDER BY tstamp DESC) AS sparkline
+      FROM ranked
+      WHERE rn <= 7
+      GROUP BY depot_id
+  )
+  SELECT
+      l.depot_id AS id,
+      l.tstamp,
+      l.value,
+      l.cash,
+      l.profit_from_start,
+      l.assets,
+      d.created,
+      d.cash_start,
+      cr.rank,
+      pr.prev_rank,
+      l7.sparkline,
+      ARRAY_AGG(ROW(up.user_id, up.name)::users.profile_ref) AS users
+  FROM latest AS l
+  LEFT JOIN depots.depots AS d ON d.id = l.depot_id
+  LEFT JOIN users.profile AS up ON up.user_id = ANY(d.users)
+  LEFT JOIN current_ranks AS cr ON cr.depot_id = l.depot_id
+  LEFT JOIN previous_ranks AS pr ON pr.depot_id = l.depot_id
+  LEFT JOIN last7 AS l7 ON l7.depot_id = l.depot_id
+  GROUP BY l.depot_id, l.tstamp, l.value, l.cash, l.profit_from_start, l.assets,
+           d.id, d.created, d.cash, d.cash_start, d.users,
+           cr.rank, pr.prev_rank, l7.sparkline
+  ORDER BY cr.rank;
+GRANT SELECT ON depots.leaderboard TO anon, authenticated;
