@@ -19,6 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useActiveDepotId } from "@/lib/depot_cookie/client"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
+import { useMemo } from "react"
 
 type Props = {
 	limit?: number
@@ -48,9 +49,9 @@ export default function NewEntryForm({
 	onSuccessAction: onSuccess,
 	className,
 }: Props) {
-	const activeDepotId = useActiveDepotId()
-	const formSchema = getFormSchema(limit)
 	const client = createClient()
+	const activeDepotId = useActiveDepotId(client)
+	const formSchema = getFormSchema(limit)
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {

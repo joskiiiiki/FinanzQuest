@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { decodeDepotCookie, encodeDepotCookie } from "./encode"
+import { Client } from "@/database/custom_types"
 
 // lib/store.ts
 
@@ -39,13 +40,18 @@ export async function getActiveDepotId(
 	return await getDepotCookie(userId)
 }
 
-export function useActiveDepotId(userId: string) {
+export function useActiveDepotId(client: Client) {
 	const searchParams = useSearchParams()
 	const [depotId, setDepotId] = useState<number | null>()
 
 	useEffect(() => {
-		getActiveDepotId(userId, searchParams.get("depot")).then(setDepotId)
-	}, [searchParams, userId])
+		async function getDepotId() {
+			const userId = (await client.auth.getUser()).data.user?.id
+			if (!userId) return
+			return await getActiveDepotId(userId, searchParams.get("depot"))
+		}
+		getDepotId().then(setDepotId)
+	}, [searchParams, client])
 
 	return depotId
 }
