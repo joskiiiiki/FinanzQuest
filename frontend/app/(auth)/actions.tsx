@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import type { Database } from "@/database/types"
 import { getDepotDefaultId } from "@/lib/db"
-import { clearActiveDepotId } from "@/lib/store/server"
+import { clearActiveDepotId } from "@/lib/depot_cookie/server"
 import { createClient } from "@/utils/supabase/server"
 
 export async function loginRedirect(email: string, password: string) {
@@ -43,6 +43,7 @@ export async function login(
 		return { error: error.message, success: false }
 	}
 
+	clearActiveDepotId()
 	revalidatePath("/", "layout")
 
 	return { error: null, success: true }
@@ -124,9 +125,10 @@ export async function signup(
 	const { error } = await c.auth.signUp(data)
 
 	if (error) {
-		return { error: error.message, success: false }
+		return { error: error, success: false }
 	}
 
+	clearActiveDepotId()
 	revalidatePath("/", "layout")
 
 	return { error: null, success: true }

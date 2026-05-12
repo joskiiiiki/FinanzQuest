@@ -33,6 +33,7 @@ export default async function Page({
 	} = await getDepotIdWithInspect(params)
 
 	if (noDepot) {
+		console.log("no depot found redirecting")
 		redirect("/new_depot")
 	} else {
 		console.log(depotId)
@@ -47,9 +48,9 @@ export default async function Page({
 		return <ErrorCard error={fres.error} />
 	}
 
-	if (fres.noDepot) {
-		redirect("/new_depot")
-	}
+	// if (fres.noDepot) {
+	// 	redirect("/new_depot")
+	// }
 
 	if (fres.depot === null) {
 		return <ErrorCard error={new Error("Depot not found")} />

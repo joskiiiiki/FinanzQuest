@@ -191,15 +191,13 @@ function TransactionItem({
 	transaction: TransactionWithAssetPosition
 }) {
 	const buy = transaction.amount > 0
-	const is_savings_plan = transaction.type == "savings_plan"
+	const is_savings_plan = transaction.type === "savings_plan"
 
 	const bg = (() => {
-		if (is_savings_plan)
-			return "bg-blue-500"
+		if (is_savings_plan) return "bg-blue-500"
 
 		return buy ? "bg-loss" : "bg-win"
-	})(
-	)
+	})()
 
 	const date = new Date(transaction.tstamp)
 
@@ -216,11 +214,11 @@ function TransactionItem({
 				<Description transaction={transaction} />
 			</span>
 
-			{
-				is_savings_plan && <span className="ml-2 text-muted-foreground text-sm self-center">
+			{is_savings_plan && (
+				<span className="ml-2 text-muted-foreground text-sm self-center">
 					Sparplan
 				</span>
-			}
+			)}
 			<span className="flex-grow" />
 
 			<span className="text-muted-foreground text-sm self-center">

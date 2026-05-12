@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select"
 import type { Depot } from "@/database/custom_types"
 import { getUserId } from "@/lib/db"
-import { getDepotCookie, setDepotCookie } from "@/lib/store/client"
+import { getActiveDepotId, setDepotCookie } from "@/lib/depot_cookie/client"
 import { createClient } from "@/utils/supabase/client"
 
 async function fetchDepots() {
@@ -32,8 +32,8 @@ export default function DepotPicker() {
 	const [activeDepotId, setActiveDepotId] = useState<number | null>(null)
 	const [depots, setDepots] = useState<Depot[] | null>([])
 
-	function setDepot(id: number) {
-		setDepotCookie(id)
+	function setDepot(id: number, userId: string) {
+		setDepotCookie(id, userId)
 		router.push(`?depot=${id}`)
 		router.refresh()
 	}
@@ -51,18 +51,14 @@ export default function DepotPicker() {
 
 	useEffect(() => {
 		;(async () => {
-			const s = searchParams.get("depot")
-			const id = s ? parseInt(s, 10) : undefined
+			const client = createClient()
+			const userId = (await client.auth.getUser()).data.user?.id
 
-			if (id) {
-				setActiveDepotId(id)
-				setDepotCookie(id)
-				return
-			}
+			if (!userId) return
 
-			const cookie = await getDepotCookie()
-			if (cookie) {
-				setActiveDepotId(cookie)
+			const depot = await getActiveDepotId(userId, searchParams.get("depot"))
+			if (depot) {
+				setActiveDepotId(depot)
 			}
 		})()
 	}, [searchParams])
@@ -70,11 +66,13 @@ export default function DepotPicker() {
 	return (
 		<Select
 			value={activeDepotId?.toString()}
-			onValueChange={value => {
+			onValueChange={async value => {
+				const client = createClient()
+				const userId = (await client.auth.getUser()).data.user?.id
 				const id = parseInt(value, 10)
-				if (id) {
+				if (id && userId) {
 					setActiveDepotId(id)
-					setDepot(id)
+					setDepot(id, userId)
 				}
 			}}
 		>

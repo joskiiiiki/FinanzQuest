@@ -1,0 +1,8 @@
+include:
+  - compose.core.yml
+name: FinanzQuest
+
+services:
+  gateway:
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile

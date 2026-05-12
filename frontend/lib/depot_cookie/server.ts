@@ -1,11 +1,13 @@
 "use server"
 import { cookies } from "next/headers"
-export async function setActiveDepotId(id: string) {
+import { decodeDepotCookie, encodeDepotCookie } from "./encode"
+export async function setActiveDepotId(id: number, userId: string) {
 	const cookieStore = await cookies()
 	const day = 24 * 3600 * 1000
+	const encoded = await encodeDepotCookie(id, userId)
 	cookieStore.set({
 		name: "activeDepotId",
-		value: id,
+		value: encoded,
 		expires: Date.now() + day,
 		path: "/",
 		sameSite: "lax",
@@ -18,14 +20,15 @@ export async function clearActiveDepotId() {
 	cookieStore.delete("activeDepotId")
 }
 
-export async function getActiveDepotId() {
+export async function getActiveDepotId(userId: string) {
 	const cookieStore = await cookies()
 	const activeDepotId = cookieStore.get("activeDepotId")
-	return activeDepotId?.value
-}
+	const encoded = activeDepotId?.value
 
-export async function getActiveDepotIdNumber() {
-	const cookieStore = await cookies()
-	const activeDepotId = cookieStore.get("activeDepotId")
-	return activeDepotId?.value ? parseInt(activeDepotId.value, 10) : null
+	if (!encoded) return null
+
+	const { depotId, valid } = await decodeDepotCookie(encoded, userId)
+
+	if (!valid || !depotId) return null
+	return depotId
 }

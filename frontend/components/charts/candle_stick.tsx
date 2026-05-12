@@ -112,7 +112,7 @@ export default function CandleStickChart<T extends BarDataT>({
 type CustomToolTipProps = React.ComponentProps<typeof Tooltip>
 
 const CustomTooltip = ({ active, payload, label }: CustomToolTipProps) => {
-	if (!active || !payload || !payload.length) {
+	if (!active || !payload?.length) {
 		return null
 	}
 

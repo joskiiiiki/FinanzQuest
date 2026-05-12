@@ -126,7 +126,7 @@ export default function TreeChart<
 type CustomTooltipProps = React.ComponentProps<typeof Tooltip>
 
 const _CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-	if (!active || !payload || !payload.length) {
+	if (!active || !payload?.length) {
 		return null
 	}
 

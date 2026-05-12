@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { useActiveDepotId } from "@/lib/store/client"
+import { useActiveDepotId } from "@/lib/depot_cookie/client"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/utils/supabase/client"
 

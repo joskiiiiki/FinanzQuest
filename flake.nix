@@ -38,8 +38,9 @@
             nginx-language-server
             nginx-config-formatter
 
-            caddyfile-language-server
+            caddy
 
+            caddyfile-language-server
             pgformatter
             postgres-lsp
             postgresql

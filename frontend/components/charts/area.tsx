@@ -58,7 +58,11 @@ export default function AreaChart<T extends Record<string, number | string>>({
 			<RechartsAreaChart accessibilityLayer data={data}>
 				<defs>
 					<linearGradient id={"fill"} x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0" stopColor={"oklch(var(--win))"} stopOpacity={0.7} />
+						<stop
+							offset="0"
+							stopColor={"oklch(var(--win))"}
+							stopOpacity={0.7}
+						/>
 						<stop
 							offset={`${offset * 100}%`}
 							stopColor={"oklch(var(--win))"}
@@ -135,7 +139,7 @@ export default function AreaChart<T extends Record<string, number | string>>({
 type CustomTooltipProps = React.ComponentProps<typeof Tooltip>
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-	if (!active || !payload || !payload.length) {
+	if (!active || !payload?.length) {
 		return null
 	}
 

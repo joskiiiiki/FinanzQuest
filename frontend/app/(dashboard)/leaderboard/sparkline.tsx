@@ -1,10 +1,9 @@
 "use client"
 
-import { ChartContainer } from "@/components/ui/chart"
-import { cn } from "@/lib/utils"
-import { BaseNextRequest } from "next/dist/server/base-http"
 import { useId } from "react"
 import { Area, AreaChart, ReferenceLine, YAxis } from "recharts"
+import { ChartContainer } from "@/components/ui/chart"
+import { cn } from "@/lib/utils"
 
 export function Sparkline({
 	data,
@@ -59,7 +58,11 @@ export function Sparkline({
 								/>
 							</linearGradient>
 							<linearGradient id={`stroke-${id}`} x1="0" y1="0" x2="0" y2="1">
-								<stop offset="0%" stopColor="oklch(var(--win))" stopOpacity={1} />
+								<stop
+									offset="0%"
+									stopColor="oklch(var(--win))"
+									stopOpacity={1}
+								/>
 								<stop
 									offset={`${offset * 100}%`}
 									stopColor="oklch(var(--win))"

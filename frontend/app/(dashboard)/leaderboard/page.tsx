@@ -1,14 +1,14 @@
+import { Minus, TriangleIcon } from "lucide-react"
 import { redirect } from "next/navigation"
 import { ErrorCard } from "@/components/cards/cards"
 import type { LeaderboardRow, SearchParams } from "@/database/custom_types"
-import { getDepotIdWithInspect } from "@/lib/get_depot_id"
-import { createClient } from "@/utils/supabase/server"
-import { cn } from "@/lib/utils"
 import {
 	currencyFormat,
 	currencyFormatFixedLength,
 } from "@/lib/cash_display_string"
-import { Minus, TriangleIcon } from "lucide-react"
+import { getDepotIdWithInspect } from "@/lib/get_depot_id"
+import { cn } from "@/lib/utils"
+import { createClient } from "@/utils/supabase/server"
 import { Sparkline } from "./sparkline"
 
 export default async function Page(props: {
