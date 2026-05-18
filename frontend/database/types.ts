@@ -1267,6 +1267,46 @@ export type Database = {
           user_names: string[]
         }[]
       }
+      get_position_profits: {
+        Args: { p_depot_id: number }
+        Returns: {
+          asset_id: number
+          asset_type: string
+          current_amount: number
+          current_price: number
+          depot_id: number
+          description: string
+          market_value: number
+          name: string
+          symbol: string
+          total_invested: number
+          total_profit: number
+          total_sold: number
+        }[]
+      }
+      get_transactions_with_position: {
+        Args: { p_depot_id: number }
+        Returns: {
+          amount: number
+          asset_id: number
+          asset_type: string
+          commission: number
+          current_amount: number
+          current_price: number
+          depot_id: number
+          description: string
+          id: number
+          market_value: number
+          price: number
+          symbol: string
+          total_invested: number
+          total_profit: number
+          total_sold: number
+          tstamp: string
+          type: string
+          user_id: string
+        }[]
+      }
       grant_reward: {
         Args: { p_amount: number; p_depot_id: number }
         Returns: undefined
