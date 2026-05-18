@@ -9,46 +9,31 @@ import { ChartCard } from "@/components/cards/client"
 import PriceTable from "@/components/prices/table/table"
 import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import type { SearchParams } from "@/database/custom_types"
 import { fetchStockData } from "@/database/fetch_stock_data"
 import { formatter as formatPrices } from "@/lib/data/formatter"
 import { getDepotId } from "@/lib/get_depot_id"
 import { getDateCertainDaysAgo } from "@/lib/util"
 import { createClient } from "@/utils/supabase/server"
 export const revalidate = 3600
-// export async function generateStaticParams() {
-//   const ids = await fetchStockIds() // Fetch the array of IDs (1000+ IDs)
-//   return ids.slice(0, 10).map(id => ({ id })) // Statically generate only the first 10
-// }
 
-export default async function Page(props: {
-	params: Promise<{ id: string }>
-	searchParams: Promise<SearchParams>
-}) {
+export default async function Page(props: { params: Promise<{ id: string }> }) {
 	const id = Number.parseInt((await props.params).id, 10)
-	const searchParams = await props.searchParams
-	const { depotId, error: depotIdError } = await getDepotId(searchParams)
-
-	if (depotIdError || !depotId) {
-		return (
-			<ErrorCard
-				error={depotIdError || new Error("Depot ID not found")}
-			></ErrorCard>
-		)
-	}
 
 	if (id < 0 || !Number.isInteger(id)) {
 		return <ErrorCard error={new Error("Invalid ID")} />
 	}
 
-	const { depot, error, positions, commission } = await dataFetcher(id, depotId)
+	const { depotId, error: depotIdError } = await getDepotId()
 
-	const {
-		info,
-		prices,
-		pricesWeekly,
-		error: fetchError,
-	} = await fetchStockDataCached(id)
+	if (depotIdError || !depotId) {
+		return <ErrorCard error={depotIdError || new Error("Depot ID not found")} />
+	}
+
+	// parallel statt sequentiell
+	const [
+		{ depot, error, positions, commission },
+		{ info, prices, pricesWeekly, error: fetchError },
+	] = await Promise.all([dataFetcher(id, depotId), fetchStockDataCached(id)])
 
 	if (error || fetchError) {
 		return (
@@ -60,9 +45,9 @@ export default async function Page(props: {
 			</main>
 		)
 	}
+
 	const { dataWithEmptyDays: pricesWithEmptyDays, data: pricesFiltered } =
 		formatPrices(prices ?? [])
-
 	const { dataWithEmptyDays: pricesWeeklyWithEmptyDays } = formatPrices(
 		pricesWeekly ?? [],
 		7
@@ -76,7 +61,6 @@ export default async function Page(props: {
 				referencePrice={pricesFiltered?.at(-2) ?? pricesFiltered?.at(0)}
 				stock={info[0]}
 			/>
-
 			<StockPositionCard
 				commission={commission}
 				hidden={!depot}
@@ -115,35 +99,41 @@ const fetchStockDataCached = cache(async (id: number) => {
 })
 
 const dataFetcher = async (stockId: number, depotId: number) => {
-  const client = await createClient()
-  const user = (await client.auth.getUser()).data.user
-  if (!user) redirect("/auth/login")
+	const client = await createClient()
+	const user = (await client.auth.getUser()).data.user
+	if (!user) redirect("/auth/login")
 
-  const { data: depot, error: depotError } = await client
-    .schema("depots")
-    .from("depots")
-    .select()
-    .eq("id", depotId)
-    .contains("users", [user.id])
-    .limit(1)
-    .maybeSingle()
+	const { data: depot, error: depotError } = await client
+		.schema("depots")
+		.from("depots")
+		.select()
+		.eq("id", depotId)
+		.contains("users", [user.id])
+		.limit(1)
+		.maybeSingle()
 
-  if (depotError) return { depot: null, error: depotError, positions: null, commission: null }
-  if (!depot) redirect("/new_depot")
+	if (depotError)
+		return { depot: null, error: depotError, positions: null, commission: null }
+	if (!depot) redirect("/new_depot")
 
-  // parallel statt sequentiell
-  const [
-    { data: positions, error: positionError },
-    { data: commission, error: commissionError },
-  ] = await Promise.all([
-    client.schema("depots").from("positions").select("*")
-      .eq("depot_id", depot.id)
-      .eq("asset_id", stockId),
-    client.schema("depots").rpc("get_commission"),
-  ])
+	// parallel statt sequentiell
+	const [
+		{ data: positions, error: positionError },
+		{ data: commission, error: commissionError },
+	] = await Promise.all([
+		client
+			.schema("depots")
+			.from("positions")
+			.select("*")
+			.eq("depot_id", depot.id)
+			.eq("asset_id", stockId),
+		client.schema("depots").rpc("get_commission"),
+	])
 
-  if (positionError) return { depot, error: positionError, positions: null, commission: null }
-  if (commissionError) return { depot, error: commissionError, positions, commission: null }
+	if (positionError)
+		return { depot, error: positionError, positions: null, commission: null }
+	if (commissionError)
+		return { depot, error: commissionError, positions, commission: null }
 
-  return { depot, error: null, positions, commission }
+	return { depot, error: null, positions, commission }
 }

@@ -1,10 +1,9 @@
 "use server"
-import type { SearchParams } from "@/database/custom_types"
 import { createClient } from "@/utils/supabase/server"
 import { getDepotDefaultId } from "./db"
 import { getActiveDepotId } from "./depot_cookie/server"
 
-export async function getDepotIdWithInspect(params: SearchParams) {
+export async function getDepotIdWithInspect() {
 	const client = await createClient()
 
 	if (params.inspect_depot) {
@@ -67,17 +66,7 @@ export async function getDepotIdWithInspect(params: SearchParams) {
 	}
 }
 
-export async function getDepotId(params: SearchParams) {
-	if (params.depot) {
-		const parsedDepotId = parseInt(params.depot, 10)
-		if (!Number.isNaN(parsedDepotId)) {
-			return {
-				depotId: parsedDepotId,
-				error: null,
-				noDepot: null,
-			}
-		}
-	}
+export async function getDepotId() {
 	const client = await createClient()
 	const userId = (await client.auth.getUser()).data.user?.id
 
