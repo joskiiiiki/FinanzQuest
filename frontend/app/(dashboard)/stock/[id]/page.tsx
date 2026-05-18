@@ -78,11 +78,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 				prices={pricesWithEmptyDays}
 				pricesWeekly={pricesWeeklyWithEmptyDays}
 			/>
-			<Card className="col-span-3 row-span-2 h-min">
+			{/* <Card className="col-span-3 row-span-2 h-min">
 				<ScrollArea className="w-full h-[400px] rounded-md border pr-3">
 					<PriceTable prices={pricesFiltered.reverse()} />
 				</ScrollArea>
-			</Card>
+			</Card> */}
 		</main>
 	)
 }
