@@ -231,7 +231,6 @@ function TransactionItem({
 const dataFetcher = async (depotId?: number) => {
 	const client = await createClient()
 	const user = (await client.auth.getUser()).data.user
-
 	if (!user) {
 		redirect("/login")
 	}
@@ -242,28 +241,22 @@ const dataFetcher = async (depotId?: number) => {
 		.select("*")
 		.contains("users", [user.id])
 
-	const depot = depots?.find(depot => depot.id === depotId) || depots?.at(0)
 	if (depotsError) {
-		return {
-			error: depotsError,
-		}
+		return { error: depotsError }
 	}
+
+	const depot = depots?.find(depot => depot.id === depotId) ?? depots?.at(0)
+
 	if (!depot) {
-		return {
-			error: new Error("No depot found"),
-		}
+		return { error: new Error("No depot found") }
 	}
+
 	const { data: transactions, error: transactionsError } = await client
 		.schema("depots")
-		.from("transactions_with_asset_position")
-		.select(`*`)
-		.eq("depot_id", depot.id)
-		.order("tstamp", { ascending: false })
+		.rpc("get_transactions_with_position", { p_depot_id: depot.id })
 
 	if (transactionsError) {
-		return {
-			error: transactionsError,
-		}
+		return { error: transactionsError }
 	}
 
 	return {

@@ -130,9 +130,7 @@ export default async function Page({
 
 const dataFetcher = async (depotId: number) => {
 	const client = await createClient()
-
 	const user = (await client.auth.getUser()).data.user
-
 	if (!user) {
 		redirect("/auth/login")
 	}
@@ -145,8 +143,6 @@ const dataFetcher = async (depotId: number) => {
 		.limit(1)
 		.maybeSingle()
 
-	const ownedByUser = response.data?.users.some(id => id === user.id)
-
 	const { data: depot, error: depotError } = response
 
 	if (depotError) {
@@ -156,29 +152,27 @@ const dataFetcher = async (depotId: number) => {
 		return { depot: null, noDepot: true }
 	}
 
+	const ownedByUser = depot.users.some((id: string) => id === user.id)
+
 	const tstamp = toISODateOnly(getDateCertainDaysAgo(30))
 	const depots = client.schema("depots")
-	const [positionResponse, valueResponse, valueAggResponse] = await Promise.all(
-		[
-			depots.from("position_profits").select().eq("depot_id", depot.id),
-			depots
-				.schema("depots")
-				.from("values")
-				.select()
-				.eq("depot_id", depot.id)
-				.gte("tstamp", tstamp),
-			depots
-				.schema("depots")
-				.from("aggregated_values")
-				.select()
-				.eq("depot_id", depot.id),
-		]
-	)
+
+	const [positionResponse, valueResponse, valueAggResponse] = await Promise.all([
+    depots.rpc("get_position_profits", { p_depot_id: depot.id }),
+    depots
+			.from("values")
+			.select()
+			.eq("depot_id", depot.id)
+			.gte("tstamp", tstamp),
+		depots
+			.from("aggregated_values")
+			.select()
+			.eq("depot_id", depot.id),
+	])
 
 	return {
-		depot: depot,
-		error:
-			positionResponse.error ?? valueResponse.error ?? valueAggResponse.error,
+		depot,
+		error: positionResponse.error ?? valueResponse.error ?? valueAggResponse.error,
 		positions: positionResponse.data,
 		depotValues: valueResponse.data,
 		depotAggValues: valueAggResponse.data,
